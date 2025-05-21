@@ -15,7 +15,7 @@ public class Category {
     @Size(min = 2, max = 50, message = "Category name must be between 2 and 50 characters")
     private String categoryname;
 
-    @NotBlank(message = "Icon URL or ID is required")
+    @NotBlank(message = "Icon URL is required")
     private String icon;
 
     public Category() {}
@@ -26,7 +26,6 @@ public class Category {
     }
 
     // Getters and setters
-
     public String getCategoryid() {
         return categoryid;
     }

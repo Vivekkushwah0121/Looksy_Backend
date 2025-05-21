@@ -10,13 +10,11 @@ public class CategoryRequest {
     @Size(min = 2, max = 50, message = "Category name must be between 2 and 50 characters")
     private String categoryname;
 
-    private String oldpic; // optional, used for icon update
+    private String oldpic; // optional, for icon update
 
-    private String categoryid; // optional, used for update/delete operations
+    private String categoryid; // optional, for update/delete
 
-    // For file uploads, validation is usually done in controller/service layer
-    // But you can check if it is null there
-    private MultipartFile icon;
+    private MultipartFile icon; // optional for update, required for add
 
     // Getters and Setters
     public String getCategoryname() {

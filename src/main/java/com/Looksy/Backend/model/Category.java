@@ -1,3 +1,4 @@
+// Category.java
 package com.Looksy.Backend.model;
 
 import org.springframework.data.annotation.Id;
@@ -25,28 +26,12 @@ public class Category {
         this.icon = icon;
     }
 
-    // Getters and setters
-    public String getCategoryid() {
-        return categoryid;
-    }
+    public String getCategoryid() { return categoryid; }
+    public void setCategoryid(String categoryid) { this.categoryid = categoryid; }
 
-    public void setCategoryid(String categoryid) {
-        this.categoryid = categoryid;
-    }
+    public String getCategoryname() { return categoryname; }
+    public void setCategoryname(String categoryname) { this.categoryname = categoryname; }
 
-    public String getCategoryname() {
-        return categoryname;
-    }
-
-    public void setCategoryname(String categoryname) {
-        this.categoryname = categoryname;
-    }
-
-    public String getIcon() {
-        return icon;
-    }
-
-    public void setIcon(String icon) {
-        this.icon = icon;
-    }
+    public String getIcon() { return icon; }
+    public void setIcon(String icon) { this.icon = icon; }
 }

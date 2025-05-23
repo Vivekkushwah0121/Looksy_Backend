@@ -15,10 +15,16 @@ public class CloudinaryService {
     @Autowired
     private Cloudinary cloudinary;
 
-    public String uploadFile(MultipartFile file) throws IOException {
+    // Generalized method with folder input
+    public String uploadFile(MultipartFile file, String folder) throws IOException {
         Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                ObjectUtils.asMap("folder", "subcategory_icons"));
+                ObjectUtils.asMap("folder", folder));
         return (String) uploadResult.get("secure_url");
+    }
+
+    // Backward-compatible method for subcategory icons (default folder)
+    public String uploadFile(MultipartFile file) throws IOException {
+        return uploadFile(file, "subcategory_icons");
     }
 
     public boolean deleteFile(String publicId) {

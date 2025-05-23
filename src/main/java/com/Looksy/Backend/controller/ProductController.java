@@ -1,0 +1,210 @@
+package com.Looksy.Backend.controller;
+
+import com.Looksy.Backend.model.Product;
+import com.Looksy.Backend.service.CloudinaryService;
+import com.Looksy.Backend.service.ProductImagesService;
+import com.Looksy.Backend.service.ProductService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/products")
+@CrossOrigin(origins = "*")
+public class ProductController {
+
+    @Autowired
+    private ProductService productService;
+
+    @Autowired
+    private ProductImagesService productImagesService;
+
+    @Autowired
+    private CloudinaryService cloudinaryService;
+
+    // ✅ Add New Product
+    @PostMapping("/add_new_product")
+    public ResponseEntity<Map<String, Object>> addNewProduct(
+            @RequestPart("data") String productJson,
+            @RequestPart(value = "icon", required = false) MultipartFile iconFile) {
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            Product product = objectMapper.readValue(productJson, Product.class);
+
+            if (iconFile != null && !iconFile.isEmpty()) {
+                String iconUrl = cloudinaryService.uploadFile(iconFile);
+                product.setIcon(iconUrl);
+            }
+
+            Product savedProduct = productService.addProduct(product);
+            return ResponseEntity.ok(Map.of(
+                    "status", true,
+                    "message", "Product added successfully",
+                    "data", savedProduct
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    // ✅ Display All Products
+    @GetMapping("/display_all_product")
+    public ResponseEntity<Map<String, Object>> displayAllProduct() {
+        try {
+            List<Product> products = productService.getAllProducts();
+            return ResponseEntity.ok(Map.of("data", products));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "data", "",
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    // ✅ Edit Product Data
+    @PostMapping("/edit_product_data")
+    public ResponseEntity<Map<String, Object>> editProductData(@RequestBody Product product) {
+        try {
+            if (product.getId() == null) {
+                return ResponseEntity.status(400).body(Map.of(
+                        "status", false,
+                        "error", "Product ID is required"
+                ));
+            }
+
+            Product updatedProduct = productService.updateProduct(product);
+            return ResponseEntity.ok(Map.of(
+                    "status", true,
+                    "message", "Product updated successfully",
+                    "data", updatedProduct
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    // ✅ Delete Product
+    @PostMapping("/delete_product_data")
+    public ResponseEntity<Map<String, Object>> deleteProductData(@RequestBody Map<String, String> request) {
+        try {
+            String productId = request.get("productid");
+            if (productId == null) {
+                return ResponseEntity.status(400).body(Map.of(
+                        "status", false,
+                        "error", "Product ID is required"
+                ));
+            }
+
+            productService.deleteProduct(productId);
+            return ResponseEntity.ok(Map.of(
+                    "status", true,
+                    "message", "Product deleted successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+
+    // ✅ Add Additional Product Images
+    @PostMapping("/add_product_images")
+    public ResponseEntity<Map<String, Object>> addProductImages(
+            @RequestPart("productid") String productId,
+            @RequestPart("images") List<MultipartFile> images) {
+
+        try {
+            if (images == null || images.isEmpty()) {
+                return ResponseEntity.status(400).body(Map.of(
+                        "status", false,
+                        "error", "No images uploaded"
+                ));
+            }
+
+            List<String> uploadedImageUrls = productImagesService.addImagesToProduct(productId, images);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", true,
+                    "message", "Images added successfully",
+                    "images", uploadedImageUrls
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+
+    // ✅ Update Product Icon
+    @PostMapping("/update_icon")
+    public ResponseEntity<Map<String, Object>> updateIcon(
+            @RequestPart("productid") String productId,
+            @RequestPart("icon") MultipartFile iconFile) {
+
+        try {
+            if (iconFile == null || iconFile.isEmpty()) {
+                return ResponseEntity.status(400).body(Map.of(
+                        "status", false,
+                        "error", "File upload failed"
+                ));
+            }
+
+            Product existingProduct = productService.getProductById(productId);
+            if (existingProduct == null) {
+                return ResponseEntity.status(404).body(Map.of(
+                        "status", false,
+                        "error", "Product not found"
+                ));
+            }
+
+            // Optionally delete old icon from Cloudinary if needed (not implemented here)
+
+            String iconUrl = cloudinaryService.uploadFile(iconFile);
+            existingProduct.setIcon(iconUrl);
+            productService.updateProduct(existingProduct);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", true,
+                    "message", "Product icon updated successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    // ✅ Fetch Products by Category & Subcategory
+    @PostMapping("/fetch_all_product")
+    public ResponseEntity<Map<String, Object>> fetchAllProduct(@RequestBody Map<String, String> request) {
+        try {
+            String categoryId = request.get("categoryid");
+            String subcategoryId = request.get("subcategoryid");
+
+            List<Product> products = productService.getProductsByCategoryAndSubcategory(categoryId, subcategoryId);
+            return ResponseEntity.ok(Map.of("data", products));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "data", "",
+                    "error", e.getMessage()
+            ));
+        }
+    }
+}

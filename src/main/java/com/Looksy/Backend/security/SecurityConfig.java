@@ -30,7 +30,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/admin/register",
                                 "/admin/check_admin_login",
-                                "/admin/cleartoken"
+                                "/admin/cleartoken",
+                                "/api/v1/user/register",
+                                "api/v1/user/login"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

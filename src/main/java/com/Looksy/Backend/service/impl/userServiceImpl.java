@@ -35,6 +35,18 @@ public class userServiceImpl implements UserService {
             throw new IllegalArgumentException("Mobile number cannot be null or empty.");
         }
 
+        // Remove "+91" prefix if it exists
+        if (mobileNumber.startsWith("+91")) {
+            mobileNumber = mobileNumber.substring(3); // Remove the first 3 characters "+91"
+        }
+
+        // Optional: You might also want to remove any spaces or hyphens for consistent storage
+        mobileNumber = mobileNumber.replaceAll("[\\s-]", "");
+        // --- End of New/Modified Logic ---
+
+        // Set the cleaned mobile number back to the user object
+        user.setMobileNumber(mobileNumber);
+
         Optional<userSchema> existingUser = userRepository.findByMobileNumber(mobileNumber);
 
         if (existingUser.isPresent()) {
@@ -47,6 +59,12 @@ public class userServiceImpl implements UserService {
         }
 
         return userRepository.save(user);
+    }
+
+    @Override
+    public boolean checkUserAlreadyRegistered(String mobileNumber) {
+        Optional<userSchema> userOptional = userRepository.findByMobileNumber(mobileNumber);
+        return userOptional.isPresent();
     }
 
     public userSchema authenticateUser(String mobileNumber, String password) {

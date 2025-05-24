@@ -13,6 +13,8 @@ public interface UserService {
 
     userSchema createUser(userSchema user);
 
+    boolean checkUserAlreadyRegistered(String mobileNumber);
+
     userSchema authenticateUser(@NotBlank(message = "Mobile is required") @Size(min = 10, max = 10, message = "Enter valid 10 Digits") String mobileNumber, String password);
 
     userSchema updateUserDetail(userSchema userDetails);

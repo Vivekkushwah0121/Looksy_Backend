@@ -1,11 +1,18 @@
 package com.Looksy.Backend.controller;
 
 
+import com.Looksy.Backend.dto.OtpRequest;
+import com.Looksy.Backend.dto.OtpVerificationRequest;
 import com.Looksy.Backend.exception.ResourceNotFoundException;
+import com.Looksy.Backend.exception.SmsServiceException;
 import com.Looksy.Backend.model.Address;
 import com.Looksy.Backend.model.userSchema;
+import com.Looksy.Backend.service.SmsService;
 import com.Looksy.Backend.service.UserService;
 import com.Looksy.Backend.dto.ApiResponse;
+import com.Looksy.Backend.util.OTP.OtpCache;
+import com.Looksy.Backend.util.OTP.OtpGenerator;
+import com.Looksy.Backend.util.OTP.OtpRateLimiter;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus; // Import for HttpStatus
 import org.springframework.http.ResponseEntity; // Import for ResponseEntity
@@ -16,12 +23,18 @@ import java.util.List;
 @RestController
 @RequestMapping("api/v1/user")
 public class UserController {
-
     private final UserService userService;
+    private final OtpCache otpCache;
+    private final OtpRateLimiter otpRateLimiter;
+    private final SmsService smsService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, OtpCache otpCache, OtpRateLimiter otpRateLimiter, SmsService smsService) {
         this.userService = userService;
+        this.otpCache = otpCache;
+        this.otpRateLimiter = otpRateLimiter;
+        this.smsService = smsService;
     }
+
 
 //    @PostMapping("/register")
 //    public ResponseEntity<ApiResponse<userSchema>> createUser(@Valid @RequestBody String mobileNumber) {
@@ -34,16 +47,126 @@ public class UserController {
 //        return new ResponseEntity<>(response, HttpStatus.CREATED);
 //    }
 
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse<userSchema>> createUser(@Valid @RequestBody userSchema user) {
-        userSchema createdUser = userService.createUser(user);
+
+    // --- New Endpoint: Request OTP for Registration ---
+    // --- New Endpoint: Request OTP for Registration ---
+    @PostMapping("/register/request-otp")
+    public ResponseEntity<ApiResponse<Void>> requestRegistrationOtp(@Valid @RequestBody OtpRequest otpRequest) {
+        String mobileNumber = otpRequest.getMobileNumber();
+
+        // 1. Check if user with this mobile number already exists and is verified
+        if (userService.checkUserAlreadyRegistered(mobileNumber)) {
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, "User with this mobile number already registered. Please login.", null),
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        // 2. Apply rate limiting
+        if (!otpRateLimiter.tryAcquire(mobileNumber)) {
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, "Too many OTP requests. Please try again later.", null),
+                    HttpStatus.TOO_MANY_REQUESTS
+            );
+        }
+
+        // 3. Generate OTP
+        String otp = OtpGenerator.generateOtp();
+
+        // 4. Store OTP in cache
+        otpCache.putOtp(mobileNumber, otp);
+
+        // 5. CRITICAL: Store the initial unverified user data in the cache
+        // Assuming userSchema has a constructor or setters to set mobileNumber and an initial status
+        userSchema unverifiedUser = new userSchema();
+        unverifiedUser.setMobileNumber(mobileNumber);
+        // You might also set other fields if they were part of the initial request,
+        // or set a status like UserStatus.UNVERIFIED
+        // unverifiedUser.setStatus(UserStatus.UNVERIFIED); // If you have a status field
+
+        otpCache.putUnverifiedUser(mobileNumber, unverifiedUser); // <--- ADD THIS LINE
+
+        // 6. Send OTP via SMS
+        try {
+            smsService.sendSms(mobileNumber, otp);
+        } catch (SmsServiceException e) {
+            // Log the actual exception for debugging in production
+            System.err.println("Failed to send SMS to " + mobileNumber + " due to: " + e.getMessage());
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, "Failed to send OTP. Please try again later.", null),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+
+        return new ResponseEntity<>(
+                new ApiResponse<>(true, "OTP sent successfully to " + mobileNumber + ". Please verify.", null),
+                HttpStatus.OK
+        );
+    }
+
+    // --- New Endpoint: Verify OTP and Complete Registration ---
+    @PostMapping("/register/verify-otp")
+    public ResponseEntity<ApiResponse<userSchema>> verifyRegistrationOtp(@Valid @RequestBody OtpVerificationRequest verificationRequest) {
+        String mobileNumber = verificationRequest.getMobileNumber();
+        String userProvidedOtp = verificationRequest.getOtp();
+
+        // 1. Retrieve stored OTP
+        String storedOtp = otpCache.getOtp(mobileNumber);
+
+        if (storedOtp == null) {
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, "OTP either expired or not requested. Please request a new one.", null),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // 2. Compare OTPs
+        if (!storedOtp.equals(userProvidedOtp)) {
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, "Incorrect OTP. Please try again.", null),
+                    HttpStatus.UNAUTHORIZED // Or BAD_REQUEST
+            );
+        }
+
+        // 3. OTP is correct: Invalidate OTP from cache
+        otpCache.invalidateOtp(mobileNumber);
+
+        // 4. Create the user (This is where the actual user creation happens)
+                // Inside verifyRegistrationOtp
+        // ...
+                userSchema unverifiedUser = otpCache.getUnverifiedUser(mobileNumber); // <--- THIS LINE IS THE CULPRIT
+
+                if (unverifiedUser == null) {
+                    return new ResponseEntity<>(
+                            new ApiResponse<>(false, "User details not found for verification. Please restart registration.", null),
+                            HttpStatus.BAD_REQUEST
+                    );
+                }
+        // ...
+
+        // Create the user using the details from the cache
+        userSchema createdUser = userService.createUser(unverifiedUser); // Your existing createUser logic
+        otpCache.invalidateUnverifiedUser(mobileNumber); // Invalidate the unverified user details after successful creation
+
         ApiResponse<userSchema> response = new ApiResponse<>(
                 true,
-                "User created successfully!",
+                "Account created and verified successfully!",
                 createdUser
         );
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
+
+
+//    @PostMapping("/register")
+//    public ResponseEntity<ApiResponse<userSchema>> createUser(@Valid @RequestBody userSchema user) {
+//        userSchema createdUser = userService.createUser(user);
+//        ApiResponse<userSchema> response = new ApiResponse<>(
+//                true,
+//                "User created successfully!",
+//                createdUser
+//        );
+//        return new ResponseEntity<>(response, HttpStatus.CREATED);
+//    }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<userSchema>> loginUser(@Valid @RequestBody userSchema user) {

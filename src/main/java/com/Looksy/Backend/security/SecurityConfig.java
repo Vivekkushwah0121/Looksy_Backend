@@ -15,7 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity // authcation manger and accutaor ko band ni krta hai
 @EnableMethodSecurity
 public class SecurityConfig {
 

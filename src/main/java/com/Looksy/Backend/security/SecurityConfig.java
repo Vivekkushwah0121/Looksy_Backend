@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -36,6 +37,7 @@ public class SecurityConfig {
                                 "/api/v1/user/register/request-otp",
                                 "/api/v1/user/register/verify-otp",
                                 "/api/v1/user/update-details",
+                                "/api/v1/fetch_all_product",
 
                                 // Unprotected Color Endpoints
                                 "/api/colors/display_all_color",
@@ -57,6 +59,9 @@ public class SecurityConfig {
                                 "/api/products/by_salestatus",
                                 "/api/products/picture",
                                 "/api/products/search",
+                                "/api/products/sorted-by-price",
+                                "/api/products/fetch_by_ids", // Ensure this is included
+                                "/api/products/by-size", // Ensure this is included
 
                                 // Subcategories
                                 "/subcategory/all",

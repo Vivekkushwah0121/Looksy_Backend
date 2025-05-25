@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/products")
@@ -91,7 +92,6 @@ public class ProductController {
         }
     }
 
-
     // ✅ Edit Product Data
     @PostMapping("/edit_product_data")
     public ResponseEntity<Map<String, Object>> editProductData(@RequestBody Product product) {
@@ -129,7 +129,7 @@ public class ProductController {
                 ));
             }
 
-            productService.deleteProduct(productId);
+            productService.deleteProduct(new ObjectId(productId)); // Convert to ObjectId
             return ResponseEntity.ok(Map.of(
                     "status", true,
                     "message", "Product deleted successfully"
@@ -141,7 +141,6 @@ public class ProductController {
             ));
         }
     }
-
 
     // ✅ Add Additional Product Images
     @PostMapping("/add_product_images")
@@ -171,9 +170,6 @@ public class ProductController {
             ));
         }
     }
-
-
-
 
     @PostMapping("/picture")
     public ResponseEntity<Map<String, Object>> fetchAllPictures(@RequestBody Map<String, String> request) {
@@ -231,7 +227,6 @@ public class ProductController {
         }
     }
 
-
     // ✅ Update Product Icon
     @PostMapping("/update_icon")
     public ResponseEntity<Map<String, Object>> updateIcon(
@@ -246,7 +241,7 @@ public class ProductController {
                 ));
             }
 
-            Product existingProduct = productService.getProductById(productId);
+            Product existingProduct = productService.getProductById(new ObjectId(productId)); // Convert to ObjectId
             if (existingProduct == null) {
                 return ResponseEntity.status(404).body(Map.of(
                         "status", false,
@@ -289,4 +284,29 @@ public class ProductController {
         }
     }
 
+    // New endpoint to fetch products by a list of IDs
+    @PostMapping("/fetch_by_ids")
+    public ResponseEntity<Map<String, Object>> fetchProductsByIds(@RequestBody List<String> ids) {
+        try {
+            if (ids == null || ids.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", false,
+                        "error", "Missing product IDs"
+                ));
+            }
+            List<Product> products = productService.findAllById(ids.stream().map(ObjectId::new).collect(Collectors.toList())); // Convert to ObjectId
+            return ResponseEntity.ok(Map.of("data", products));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/by-size")
+    public ResponseEntity<?> getProductsBySize(@RequestParam String size) {
+        List<Product> products = productService.getProductsBySize(size);
+        return ResponseEntity.ok(Map.of("status", true, "data", products));
+    }
 }

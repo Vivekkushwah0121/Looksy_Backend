@@ -1,16 +1,35 @@
 package com.Looksy.Backend.service;
 
+import com.Looksy.Backend.model.Dimension;
 import com.Looksy.Backend.model.Product;
+import com.Looksy.Backend.repository.DimensionRepository;
 import com.Looksy.Backend.repository.ProductRepository;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
+import org.springframework.data.mongodb.core.MongoTemplate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.LookupOperation;
+import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
+import org.springframework.data.mongodb.core.aggregation.SortOperation;
+import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 
 @Service
 public class ProductService {
+
+    @Autowired
+    private DimensionRepository dimensionRepository;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
     @Autowired
     private ProductRepository productRepository;
 
@@ -22,8 +41,6 @@ public class ProductService {
             throw new RuntimeException("Failed to save product: " + e.getMessage());
         }
     }
-
-
 
     public List<Product> getProductsBySaleStatus(String saleStatus) {
         try {
@@ -43,7 +60,7 @@ public class ProductService {
     }
 
     // Get product by ID
-    public Product getProductById(String id) {
+    public Product getProductById(ObjectId id) { // Change to ObjectId
         try {
             Optional<Product> product = productRepository.findById(id);
             return product.orElse(null);
@@ -65,7 +82,7 @@ public class ProductService {
     }
 
     // Delete product
-    public void deleteProduct(String id) {
+    public void deleteProduct(ObjectId id) { // Change to ObjectId
         try {
             if (!productRepository.existsById(id)) {
                 throw new RuntimeException("Product not found with id: " + id);
@@ -76,8 +93,7 @@ public class ProductService {
         }
     }
 
-
-// In ProductService.java
+    // Get products by category and subcategory
     public List<Product> getProductsByCategoryAndSubcategory(String categoryId, String subcategoryId) {
         try {
             ObjectId categoryObjectId = new ObjectId(categoryId);
@@ -88,11 +104,11 @@ public class ProductService {
         }
     }
 
-
     // Get products by category only
     public List<Product> getProductsByCategory(String categoryId) {
         try {
-            return productRepository.findByCategoryid(categoryId);
+            ObjectId categoryObjectId = new ObjectId(categoryId);
+            return productRepository.findByCategoryid(categoryObjectId);
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch products by category: " + e.getMessage());
         }
@@ -113,5 +129,56 @@ public class ProductService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to search products: " + e.getMessage());
         }
+    }
+
+    public List<Document> fetchAllProductsLTH() {
+        return mongoTemplate.aggregate(
+                newAggregation(
+                        lookup("category", "categoryid", "_id", "categoryDetails"),
+                        lookup("subcategory", "subcategoryid", "_id", "subcategoryDetails"),
+                        project("productname", "price", "categoryDetails.categoryname", "subcategoryDetails.subcategoryname")
+                ),
+                "products",
+                Document.class
+        ).getMappedResults();
+    }
+
+    public List<Document> fetchAllProductsWithCategoryAndSubcategory() {
+        LookupOperation lookupCategory = Aggregation.lookup("category", "categoryid", "_id", "categoryDetails");
+        LookupOperation lookupSubcategory = Aggregation.lookup("subcategory", "subcategoryid", "_id", "subcategoryDetails");
+
+        ProjectionOperation project = Aggregation.project("productname", "price")
+                .and("categoryDetails.categoryname").as("categoryName")
+                .and("subcategoryDetails.subcategoryname").as("subcategoryName");
+
+        SortOperation sortByPrice = Aggregation.sort(Sort.by(Sort.Order.desc("price")));
+
+        Aggregation aggregation = Aggregation.newAggregation(lookupCategory, lookupSubcategory, project, sortByPrice);
+
+        AggregationResults<Document> results = mongoTemplate.aggregate(aggregation, "products", Document.class);
+        return results.getMappedResults();
+    }
+
+    public List<Product> findAllById(Iterable<ObjectId> ids) { // Change to ObjectId
+        try {
+            return productRepository.findAllById(ids);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch products by IDs: " + e.getMessage());
+        }
+    }
+
+    public List<Product> getProductsBySize(String size) {
+        List<Dimension> dimensions = dimensionRepository.findByDimension(size);
+
+        if (dimensions.isEmpty()) {
+            return Collections.emptyList(); // Return an empty list if no dimensions found
+        }
+
+        List<ObjectId> productIds = dimensions.stream()
+                .map(d -> d.getProductid()) // Assuming getProductid() returns ObjectId
+                .distinct()
+                .collect(Collectors.toList());
+
+        return productRepository.findByIdIn(productIds);
     }
 }

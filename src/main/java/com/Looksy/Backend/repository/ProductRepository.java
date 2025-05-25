@@ -8,35 +8,11 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ProductRepository extends MongoRepository<Product, String> {
-
-    // Find products by category ID
-    List<Product> findByCategoryid(String categoryId);
-
-    // Find products by subcategory ID
-    List<Product> findBySubcategoryid(String subcategoryId);
-
-    // Find products by category and subcategory
+public interface ProductRepository extends MongoRepository<Product, ObjectId> {
+    List<Product> findBySalestatus(String salestatus);
+    List<Product> findByCategoryid(ObjectId categoryid);
     List<Product> findByCategoryidAndSubcategoryid(ObjectId categoryid, ObjectId subcategoryid);
-
-    // Find products by status
     List<Product> findByStatus(String status);
-
-    // Find products by sale status
-    List<Product> findBySalestatus(String saleStatus);
-
-    // Find products by name (case-insensitive search)
-    List<Product> findByProductnameContainingIgnoreCase(String productName);
-
-    // Find products by price range
-    List<Product> findByPriceBetween(String minPrice, String maxPrice);
-
-    // Find products by rating greater than or equal to
-    List<Product> findByRatingGreaterThanEqual(String rating);
-
-    // Find products by stock greater than
-    List<Product> findByStockGreaterThan(String stock);
-
-    // Find active products
-    List<Product> findByStatusAndSalestatus(String status, String saleStatus);
+    List<Product> findByProductnameContainingIgnoreCase(String productname);
+    List<Product> findByIdIn(List<ObjectId> ids); // Adjusted to accept ObjectId
 }

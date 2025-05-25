@@ -8,13 +8,13 @@ import jakarta.validation.constraints.NotBlank;
 @Document(collection = "products")
 public class Product {
     @Id
-    private String id; // MongoDB auto-generates ObjectId as String
+    private ObjectId id; // Changed to ObjectId
 
     @NotBlank
-    private ObjectId categoryid; // Change to ObjectId
+    private ObjectId categoryid;
 
     @NotBlank
-    private ObjectId subcategoryid; // Change to ObjectId
+    private ObjectId subcategoryid;
 
     @NotBlank
     private String productname;
@@ -47,9 +47,10 @@ public class Product {
     // Constructors
     public Product() {}
 
-    public Product(ObjectId categoryid, ObjectId subcategoryid, String productname,
+    public Product(ObjectId id, ObjectId categoryid, ObjectId subcategoryid, String productname,
                    String price, String offerprice, String stock, String description,
                    String rating, String status, String salestatus) {
+        this.id = id; // Initialize ObjectId
         this.categoryid = categoryid;
         this.subcategoryid = subcategoryid;
         this.productname = productname;
@@ -63,11 +64,11 @@ public class Product {
     }
 
     // Getters and Setters
-    public String getId() {
+    public ObjectId getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(ObjectId id) {
         this.id = id;
     }
 
@@ -163,7 +164,7 @@ public class Product {
         return icon;
     }
 
-    public void setIcon(String icon) {
+    public void setIcon(String icon) { // Ensure this method exists
         this.icon = icon;
     }
 }

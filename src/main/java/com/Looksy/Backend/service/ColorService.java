@@ -53,9 +53,8 @@ public class ColorService {
     }
 
     public List<Color> getColorsByProductId(String productId) {
-        return colorRepository.findByProductid(productId);
+        ObjectId objectId = new ObjectId(productId);
+        return colorRepository.findByProductid(objectId);
     }
-
-
 
 }

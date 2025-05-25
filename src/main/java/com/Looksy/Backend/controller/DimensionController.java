@@ -79,8 +79,7 @@ public class DimensionController {
             return ResponseEntity.status(404).body("Dimension not found.");
         }
     }
-
-    @GetMapping("/fetch_all_dimensions")
+    @PostMapping("/fetch_all_dimensions")
     public ResponseEntity<List<DimensionDTO>> fetchAllDimensions(@RequestBody DimensionDTO dimensionDTO) {
         List<Dimension> dimensions = dimensionService.fetchAllDimensions(
                 dimensionDTO.getCategoryid(),
@@ -92,4 +91,6 @@ public class DimensionController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dimensionDTOs);
     }
+
+
 }

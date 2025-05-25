@@ -71,7 +71,7 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/by_salestatus")
+    @PostMapping("/by_salestatus")
     public ResponseEntity<Map<String, Object>> getProductsBySaleStatus(@RequestBody Map<String, String> request) {
         try {
             String saleStatus = request.get("salestatus");
@@ -175,7 +175,7 @@ public class ProductController {
 
 
 
-    @GetMapping("/picture")
+    @PostMapping("/picture")
     public ResponseEntity<Map<String, Object>> fetchAllPictures(@RequestBody Map<String, String> request) {
         String categoryId = request.get("categoryid");
         String subcategoryId = request.get("subcategoryid");
@@ -211,7 +211,7 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     public ResponseEntity<Map<String, Object>> searchProducts(@RequestBody Map<String, String> request) {
         try {
             String productName = request.get("productname");
@@ -273,7 +273,7 @@ public class ProductController {
     }
 
     // ✅ Fetch Products by Category & Subcategory
-    @GetMapping("/fetch_all_product")
+    @PostMapping("/fetch_all_product")
     public ResponseEntity<Map<String, Object>> fetchAllProduct(@RequestBody Map<String, String> request) {
         try {
             String categoryId = request.get("categoryid");
@@ -288,4 +288,5 @@ public class ProductController {
             ));
         }
     }
+
 }

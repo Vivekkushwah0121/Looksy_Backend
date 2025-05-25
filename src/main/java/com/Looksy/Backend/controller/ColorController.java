@@ -24,15 +24,16 @@ public class ColorController {
         return ResponseEntity.ok(color);
     }
 
+
     @GetMapping("/product-by-id")
-    public ResponseEntity<List<Color>> getColorsByProductId(@RequestBody Map<String, String> request) {
-        String productId = request.get("productid");
+    public ResponseEntity<List<Color>> getColorsByProductId(@RequestParam("productId") String productId) {
         if (productId == null || productId.isEmpty()) {
             return ResponseEntity.badRequest().body(null);
         }
         List<Color> colors = colorService.getColorsByProductId(productId);
         return ResponseEntity.ok(colors);
     }
+
 
     @GetMapping("/display_all_color")
     public ResponseEntity<List<Color>> displayAllColor() {

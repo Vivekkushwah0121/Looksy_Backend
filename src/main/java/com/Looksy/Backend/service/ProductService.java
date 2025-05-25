@@ -181,4 +181,14 @@ public class ProductService {
 
         return productRepository.findByIdIn(productIds);
     }
+
+    public List<Product> getProductsSortedByPrice() {
+        try {
+            return productRepository.findAll(Sort.by(Sort.Order.asc("price")));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch products sorted by price: " + e.getMessage());
+        }
+    }
+
+
 }

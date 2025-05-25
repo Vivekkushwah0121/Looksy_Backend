@@ -5,6 +5,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.List;
+
 @Document(collection = "products")
 public class Product {
     @Id
@@ -40,7 +42,7 @@ public class Product {
     @NotBlank
     private String salestatus;
 
-    private String picture; // For multiple images (comma-separated)
+    private List<String> picture;
 
     private String icon;    // Single icon file
 
@@ -152,11 +154,11 @@ public class Product {
         this.salestatus = salestatus;
     }
 
-    public String getPicture() {
+    public List<String> getPicture() {
         return picture;
     }
 
-    public void setPicture(String picture) {
+    public void setPicture(List<String> picture) {
         this.picture = picture;
     }
 

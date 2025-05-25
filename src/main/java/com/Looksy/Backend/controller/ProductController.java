@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,15 +34,29 @@ public class ProductController {
     @PostMapping("/add_new_product")
     public ResponseEntity<Map<String, Object>> addNewProduct(
             @RequestPart("data") String productJson,
-            @RequestPart(value = "icon", required = false) MultipartFile iconFile) {
+            @RequestPart(value = "icon", required = false) MultipartFile iconFile,
+            @RequestPart(value = "picture", required = false) MultipartFile[] pictureFiles) {
 
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             Product product = objectMapper.readValue(productJson, Product.class);
 
+            // Upload icon
             if (iconFile != null && !iconFile.isEmpty()) {
                 String iconUrl = cloudinaryService.uploadFile(iconFile);
                 product.setIcon(iconUrl);
+            }
+
+            // Upload pictures
+            if (pictureFiles != null && pictureFiles.length > 0) {
+                List<String> pictureUrls = new ArrayList<>();
+                for (MultipartFile pictureFile : pictureFiles) {
+                    if (!pictureFile.isEmpty()) {
+                        String pictureUrl = cloudinaryService.uploadFile(pictureFile);
+                        pictureUrls.add(pictureUrl);
+                    }
+                }
+                product.setPicture(pictureUrls);
             }
 
             Product savedProduct = productService.addProduct(product);
@@ -57,6 +72,8 @@ public class ProductController {
             ));
         }
     }
+
+
 
     // ✅ Display All Products
     @GetMapping("/display_all_product")
@@ -93,9 +110,16 @@ public class ProductController {
     }
 
     // ✅ Edit Product Data
-    @PostMapping("/edit_product_data")
-    public ResponseEntity<Map<String, Object>> editProductData(@RequestBody Product product) {
+    @PutMapping("/edit_product_data")
+    public ResponseEntity<Map<String, Object>> editProductData(
+            @RequestPart("data") String productJson,
+            @RequestPart(value = "icon", required = false) MultipartFile iconFile,
+            @RequestPart(value = "picture", required = false) MultipartFile[] pictureFiles) {
+
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            Product product = objectMapper.readValue(productJson, Product.class);
+
             if (product.getId() == null) {
                 return ResponseEntity.status(400).body(Map.of(
                         "status", false,
@@ -103,11 +127,30 @@ public class ProductController {
                 ));
             }
 
-            Product updatedProduct = productService.updateProduct(product);
+            // Upload new icon if provided
+            if (iconFile != null && !iconFile.isEmpty()) {
+                String iconUrl = cloudinaryService.uploadFile(iconFile);
+                product.setIcon(iconUrl);
+            }
+
+            // Upload new pictures if provided
+            if (pictureFiles != null && pictureFiles.length > 0) {
+                List<String> pictureUrls = new ArrayList<>();
+                for (MultipartFile file : pictureFiles) {
+                    if (!file.isEmpty()) {
+                        String url = cloudinaryService.uploadFile(file);
+                        pictureUrls.add(url);
+                    }
+                }
+                product.setPicture(pictureUrls); // Replacing old pictures
+            }
+
+            Product updated = productService.updateProduct(product);
+
             return ResponseEntity.ok(Map.of(
                     "status", true,
                     "message", "Product updated successfully",
-                    "data", updatedProduct
+                    "data", updated
             ));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
@@ -116,6 +159,8 @@ public class ProductController {
             ));
         }
     }
+
+
 
     // ✅ Delete Product
     @PostMapping("/delete_product_data")
@@ -309,4 +354,20 @@ public class ProductController {
         List<Product> products = productService.getProductsBySize(size);
         return ResponseEntity.ok(Map.of("status", true, "data", products));
     }
+
+    @GetMapping("/sorted-by-price")
+    public ResponseEntity<Map<String, Object>> getProductsSortedByPrice() {
+        try {
+            List<Product> products = productService.getProductsSortedByPrice();
+            return ResponseEntity.ok(Map.of("data", products));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+
+
 }

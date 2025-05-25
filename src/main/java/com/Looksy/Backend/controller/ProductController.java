@@ -5,6 +5,7 @@ import com.Looksy.Backend.service.CloudinaryService;
 import com.Looksy.Backend.service.ProductImagesService;
 import com.Looksy.Backend.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -69,6 +70,27 @@ public class ProductController {
             ));
         }
     }
+
+    @GetMapping("/by_salestatus")
+    public ResponseEntity<Map<String, Object>> getProductsBySaleStatus(@RequestBody Map<String, String> request) {
+        try {
+            String saleStatus = request.get("salestatus");
+            if (saleStatus == null || saleStatus.isEmpty()) {
+                return ResponseEntity.status(400).body(Map.of(
+                        "status", false,
+                        "error", "Missing salestatus parameter"
+                ));
+            }
+            List<Product> products = productService.getProductsBySaleStatus(saleStatus);
+            return ResponseEntity.ok(Map.of("data", products));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
 
     // ✅ Edit Product Data
     @PostMapping("/edit_product_data")
@@ -151,6 +173,65 @@ public class ProductController {
     }
 
 
+
+
+    @GetMapping("/picture")
+    public ResponseEntity<Map<String, Object>> fetchAllPictures(@RequestBody Map<String, String> request) {
+        String categoryId = request.get("categoryid");
+        String subcategoryId = request.get("subcategoryid");
+        String productId = request.get("productid");
+
+        if (categoryId == null || subcategoryId == null || productId == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", false,
+                    "error", "Missing required parameters"
+            ));
+        }
+
+        try {
+            List<String> images = productImagesService.getProductImages(
+                    new ObjectId(categoryId),
+                    new ObjectId(subcategoryId),
+                    new ObjectId(productId)
+            );
+
+            if (images.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of(
+                        "status", false,
+                        "message", "No images found."
+                ));
+            }
+
+            return ResponseEntity.ok(Map.of("status", true, "data", images));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchProducts(@RequestBody Map<String, String> request) {
+        try {
+            String productName = request.get("productname");
+            if (productName == null || productName.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "status", false,
+                        "error", "Missing productname parameter"
+                ));
+            }
+            List<Product> products = productService.searchProductsByName(productName);
+            return ResponseEntity.ok(Map.of("data", products));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", false,
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
+
     // ✅ Update Product Icon
     @PostMapping("/update_icon")
     public ResponseEntity<Map<String, Object>> updateIcon(
@@ -192,7 +273,7 @@ public class ProductController {
     }
 
     // ✅ Fetch Products by Category & Subcategory
-    @PostMapping("/fetch_all_product")
+    @GetMapping("/fetch_all_product")
     public ResponseEntity<Map<String, Object>> fetchAllProduct(@RequestBody Map<String, String> request) {
         try {
             String categoryId = request.get("categoryid");

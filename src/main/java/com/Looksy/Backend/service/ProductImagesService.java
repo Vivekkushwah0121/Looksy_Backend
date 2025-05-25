@@ -54,4 +54,13 @@ public class ProductImagesService {
         productImagesRepository.save(existing);
         return uploadedUrls;
     }
+
+    public List<String> getProductImages(ObjectId categoryid, ObjectId subcategoryid, ObjectId productid) {
+        ProductImages productImages = productImagesRepository.findByProductid(productid);
+        if (productImages != null) {
+            return productImages.getProductimages(); // Return the list of image URLs directly
+        }
+        return List.of(); // Return an empty list if no images found
+    }
+
 }

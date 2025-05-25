@@ -82,6 +82,15 @@ public class SubcategoryService {
     }
 
 
+    public List<SubcategoryResponse> getSubcategoriesByPriority(String priority) {
+        List<Subcategory> subcategories = subcategoryRepository.findByBannerpriority(priority);
+        return subcategories.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+
+
     private SubcategoryResponse mapToResponse(Subcategory subcategory) {
         String categoryIdStr = subcategory.getCategoryid().toHexString(); // Convert ObjectId to String
         String categoryname = categoryRepository.findById(categoryIdStr)

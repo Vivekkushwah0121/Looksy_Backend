@@ -23,6 +23,16 @@ public class ProductService {
         }
     }
 
+
+
+    public List<Product> getProductsBySaleStatus(String saleStatus) {
+        try {
+            return productRepository.findBySalestatus(saleStatus);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch products by sale status: " + e.getMessage());
+        }
+    }
+
     // Get all products
     public List<Product> getAllProducts() {
         try {
@@ -97,7 +107,6 @@ public class ProductService {
         }
     }
 
-    // Search products by name
     public List<Product> searchProductsByName(String productName) {
         try {
             return productRepository.findByProductnameContainingIgnoreCase(productName);

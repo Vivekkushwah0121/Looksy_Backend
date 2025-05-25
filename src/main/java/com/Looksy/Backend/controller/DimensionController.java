@@ -80,7 +80,7 @@ public class DimensionController {
         }
     }
 
-    @PostMapping("/fetch_all_dimensions")
+    @GetMapping("/fetch_all_dimensions")
     public ResponseEntity<List<DimensionDTO>> fetchAllDimensions(@RequestBody DimensionDTO dimensionDTO) {
         List<Dimension> dimensions = dimensionService.fetchAllDimensions(
                 dimensionDTO.getCategoryid(),

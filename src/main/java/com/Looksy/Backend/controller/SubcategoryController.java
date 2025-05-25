@@ -118,4 +118,11 @@ public class SubcategoryController {
     public ResponseEntity<List<SubcategoryResponse>> getByCategoryid(@PathVariable String categoryid) {
         return ResponseEntity.ok(subcategoryService.getSubcategoriesByCategoryid(categoryid));
     }
+
+    @GetMapping("/by-priority/{priority}")
+    public ResponseEntity<List<SubcategoryResponse>> getSubcategoriesByPriority(@PathVariable String priority) {
+        List<SubcategoryResponse> subcategories = subcategoryService.getSubcategoriesByPriority(priority);
+        return ResponseEntity.ok(subcategories);
+    }
+
 }

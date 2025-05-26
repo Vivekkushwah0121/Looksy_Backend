@@ -45,9 +45,4 @@ public class DimensionService {
         return dimensionRepository.findAll(); // Implement filtering logic as needed
     }
 
-    public List<Dimension> fetchAllDimensionsByProductId(ObjectId productId) {
-        // Assuming you have a method in your DimensionRepository to find by productid
-        // If not, you'll need to add it: `List<Dimension> findByProductid(ObjectId productid);`
-        return dimensionRepository.findByProductid(productId);
-    }
 }

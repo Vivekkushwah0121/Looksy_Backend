@@ -1,38 +1,38 @@
 package com.Looksy.Backend.model;
 
-import org.bson.types.ObjectId; // Import ObjectId
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull; // Added for numerical fields
 
 @Document(collection = "products")
 public class Product {
     @Id
-    private String id; // MongoDB auto-generates ObjectId as String
+    private String id;
 
-    @NotBlank
-    private ObjectId categoryid; // Change to ObjectId
+    @NotNull // Changed from @NotBlank for ObjectId
+    private ObjectId categoryid;
 
-    @NotBlank
-    private ObjectId subcategoryid; // Change to ObjectId
+    @NotNull // Changed from @NotBlank for ObjectId
+    private ObjectId subcategoryid;
 
     @NotBlank
     private String productname;
 
-    @NotBlank
-    private String price;
+    @NotNull // Changed to NotNull for Double
+    private Double price; // Changed to Double
 
-    @NotBlank
-    private String offerprice;
+    private Double offerprice; // Changed to Double, can be null if no offer
 
-    @NotBlank
-    private String stock;
+    @NotNull // Changed to NotNull for Integer
+    private Integer stock; // Changed to Integer
 
     @NotBlank
     private String description;
 
-    @NotBlank
-    private String rating;
+    @NotNull // Changed to NotNull for Double
+    private Double rating; // Changed to Double
 
     @NotBlank
     private String status;
@@ -48,8 +48,8 @@ public class Product {
     public Product() {}
 
     public Product(ObjectId categoryid, ObjectId subcategoryid, String productname,
-                   String price, String offerprice, String stock, String description,
-                   String rating, String status, String salestatus) {
+                   Double price, Double offerprice, Integer stock, String description,
+                   Double rating, String status, String salestatus) {
         this.categoryid = categoryid;
         this.subcategoryid = subcategoryid;
         this.productname = productname;
@@ -95,27 +95,27 @@ public class Product {
         this.productname = productname;
     }
 
-    public String getPrice() {
+    public Double getPrice() { // Changed return type
         return price;
     }
 
-    public void setPrice(String price) {
+    public void setPrice(Double price) { // Changed parameter type
         this.price = price;
     }
 
-    public String getOfferprice() {
+    public Double getOfferprice() { // Changed return type
         return offerprice;
     }
 
-    public void setOfferprice(String offerprice) {
+    public void setOfferprice(Double offerprice) { // Changed parameter type
         this.offerprice = offerprice;
     }
 
-    public String getStock() {
+    public Integer getStock() { // Changed return type
         return stock;
     }
 
-    public void setStock(String stock) {
+    public void setStock(Integer stock) { // Changed parameter type
         this.stock = stock;
     }
 
@@ -127,11 +127,11 @@ public class Product {
         this.description = description;
     }
 
-    public String getRating() {
+    public Double getRating() { // Changed return type
         return rating;
     }
 
-    public void setRating(String rating) {
+    public void setRating(Double rating) { // Changed parameter type
         this.rating = rating;
     }
 

@@ -31,11 +31,9 @@ public class SecurityConfig {
                                 "/admin/register",
                                 "/admin/check_admin_login",
                                 "/admin/cleartoken",
-                                "/api/v1/user/register",
-                                "/api/v1/user/login",
-                                "/api/v1/user/register/request-otp",
-                                "/api/v1/user/register/verify-otp",
-                                "api/v1/user/update-details"
+                                "/api/v1/user/register"
+//                                "/api/v1/user/register/request-otp",
+//                                "/api/v1/user/register/verify-otp",
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

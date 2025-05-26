@@ -92,4 +92,14 @@ public class DimensionController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dimensionDTOs);
     }
+
+    ///display_all_size_by_productid
+    @GetMapping("/{productId}/all_size")
+    public ResponseEntity<List<DimensionDTO>> fetchAllSizeByProductId(@PathVariable("productId") ObjectId productId){
+        List<Dimension> dimensions = dimensionService.fetchAllDimensionsByProductId(productId);
+        List<DimensionDTO> dimensionDTOs = dimensions.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dimensionDTOs);
+    }
 }

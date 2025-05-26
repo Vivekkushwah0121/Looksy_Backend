@@ -32,6 +32,7 @@ public class SecurityConfig {
                                 "/admin/register",
                                 "/admin/check_admin_login",
                                 "/admin/cleartoken",
+
                                 "/api/v1/user/register",
                                 "/api/v1/user/login",
                                 "/api/v1/user/register/request-otp",
@@ -66,7 +67,9 @@ public class SecurityConfig {
                                 // Subcategories
                                 "/subcategory/all",
                                 "/subcategory/by-category/**", // Allow all subcategory IDs
-                                "/subcategory/by-priority/**"  // Allow all priority values
+                                "/subcategory/by-priority/**",
+                                "/api/v1/user/register"
+                                // Allow all priority values
                         ).permitAll() // Allow access to the above endpoints without authentication
                         .anyRequest().authenticated() // Require authentication for all other requests
                 )

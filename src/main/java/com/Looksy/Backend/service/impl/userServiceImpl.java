@@ -7,6 +7,7 @@ import com.Looksy.Backend.model.Address;
 import com.Looksy.Backend.model.userSchema;
 import com.Looksy.Backend.repository.UserRepository;
 import com.Looksy.Backend.service.UserService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Optional;
 @Service
 public class userServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public userServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -54,6 +56,14 @@ public class userServiceImpl implements UserService {
             throw new UserAlreadyExistsException("This mobile number is already registered.");
         }
 
+        String userPass = user.getPassword();
+
+        if (userPass == null || userPass.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty.");
+        }
+
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         if (user.getAddresses() == null) {
             user.setAddresses(new java.util.ArrayList<>());
         }
@@ -77,13 +87,12 @@ public class userServiceImpl implements UserService {
 
         userSchema user = userOptional.get();
 
-        if (!user.getPassword().equals(password)) { // DANGER: This is INSECURE for production!
+        if (passwordEncoder.matches(password, user.getPassword())) {
+            return user;
+        }
+        else{
             throw new IllegalArgumentException("Incorrect password.");
         }
-
-
-        // If both mobile number found and password matches, return the user
-        return user;
     }
 
     @Override

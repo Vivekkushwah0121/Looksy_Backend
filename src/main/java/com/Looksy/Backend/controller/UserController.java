@@ -1,6 +1,7 @@
 package com.Looksy.Backend.controller;
 
 
+import com.Looksy.Backend.dto.AuthResponse;
 import com.Looksy.Backend.dto.OtpRequest;
 import com.Looksy.Backend.dto.OtpVerificationRequest;
 import com.Looksy.Backend.exception.ResourceNotFoundException;
@@ -10,10 +11,13 @@ import com.Looksy.Backend.model.userSchema;
 import com.Looksy.Backend.service.SmsService;
 import com.Looksy.Backend.service.UserService;
 import com.Looksy.Backend.dto.ApiResponse;
+import com.Looksy.Backend.util.JwtUtil;
 import com.Looksy.Backend.util.OTP.OtpCache;
 import com.Looksy.Backend.util.OTP.OtpGenerator;
 import com.Looksy.Backend.util.OTP.OtpRateLimiter;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus; // Import for HttpStatus
 import org.springframework.http.ResponseEntity; // Import for ResponseEntity
 import org.springframework.web.bind.annotation.*;
@@ -23,17 +27,27 @@ import java.util.List;
 @RestController
 @RequestMapping("api/v1/user")
 public class UserController {
+    @Autowired
     private final UserService userService;
     private final OtpCache otpCache;
     private final OtpRateLimiter otpRateLimiter;
     private final SmsService smsService;
+    private final JwtUtil jwtUtil;
 
-    public UserController(UserService userService, OtpCache otpCache, OtpRateLimiter otpRateLimiter, SmsService smsService) {
+
+    public UserController(UserService userService, OtpCache otpCache, OtpRateLimiter otpRateLimiter, SmsService smsService, JwtUtil jwtUtil) {
         this.userService = userService;
         this.otpCache = otpCache;
         this.otpRateLimiter = otpRateLimiter;
         this.smsService = smsService;
+        this.jwtUtil = jwtUtil;
     }
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${jwt.expiration}")
+    private long jwtExpiration; // milliseconds
 
 
 //    @PostMapping("/register")
@@ -157,54 +171,32 @@ public class UserController {
     }
 
 
-//    @PostMapping("/register")
-//    public ResponseEntity<ApiResponse<userSchema>> createUser(@Valid @RequestBody userSchema user) {
-//        userSchema createdUser = userService.createUser(user);
-//        ApiResponse<userSchema> response = new ApiResponse<>(
-//                true,
-//                "User created successfully!",
-//                createdUser
-//        );
-//        return new ResponseEntity<>(response, HttpStatus.CREATED);
-//    }
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<userSchema>> createUser(@Valid @RequestBody userSchema user) {
+        userSchema createdUser = userService.createUser(user);
+        ApiResponse<userSchema> response = new ApiResponse<>(
+                true,
+                "User created successfully!",
+                createdUser
+        );
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<userSchema>> loginUser(@Valid @RequestBody userSchema user) {
+    public ResponseEntity<AuthResponse<userSchema>> loginUser(@Valid @RequestBody userSchema user) {
         try {
             userSchema authenticatedUser = userService.authenticateUser(user.getMobileNumber(), user.getPassword());
-
-            // IMPORTANT: Remove sensitive data like password before sending response
             authenticatedUser.setPassword(null);
 
-            ApiResponse<userSchema> response = new ApiResponse<>(
-                    true,
-                    "Login successful!",
-                    authenticatedUser
-            );
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (ResourceNotFoundException e) {
-            // User not found with the provided mobile number
-            ApiResponse<userSchema> errorResponse = new ApiResponse<>(
-                    false,
-                    "Invalid credentials: User not found with this mobile number.",
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
-        } catch (IllegalArgumentException e) {
-            // This exception could be thrown by userService for incorrect password
-            ApiResponse<userSchema> errorResponse = new ApiResponse<>(
-                    false,
-                    "Invalid credentials: " + e.getMessage(), // e.g., "Incorrect password"
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+            // Generate JWT token
+            String token = jwtUtil.generateUserToken(authenticatedUser.getMobileNumber(), authenticatedUser.getId(), List.of("ROLE_USER"));
+            // Use AuthResponse instead of modifying ApiResponse
+            return ResponseEntity.ok(new AuthResponse<>(true, "Login successful!", authenticatedUser, token));
+
         } catch (Exception e) {
-            ApiResponse<userSchema> errorResponse = new ApiResponse<>(
-                    false,
-                    "Server Error: Could not process login.",
-                    null
-            );
-            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthResponse<>(false, "Login failed.", null, null));
         }
     }
 

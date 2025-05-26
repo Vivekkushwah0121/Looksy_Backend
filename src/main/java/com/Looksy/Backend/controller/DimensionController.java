@@ -91,6 +91,4 @@ public class DimensionController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dimensionDTOs);
     }
-
-
 }

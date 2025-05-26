@@ -37,17 +37,20 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (jwtUtil.validateToken(token)) {
                 String email = jwtUtil.getEmailFromToken(token);
+                String mobileNumber = jwtUtil.getMobileNumberFromToken(token);
+                List<String> roles = jwtUtil.getUserRolesFromToken(token);
 
                 // Only set the Authentication if not already authenticated
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    email,
-                                    null,
-                                    List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-                            );
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    List<SimpleGrantedAuthority> authorities = roles.stream()
+                            .map(SimpleGrantedAuthority::new).toList();
 
+                    String principal = roles.contains("ROLE_ADMIN") ? jwtUtil.getEmailFromToken(token) : jwtUtil.getMobileNumberFromToken(token);
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(principal, null, authorities);
+
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } else {

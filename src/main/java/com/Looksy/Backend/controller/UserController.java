@@ -1,6 +1,5 @@
 package com.Looksy.Backend.controller;
 
-
 import com.Looksy.Backend.dto.AuthResponse;
 import com.Looksy.Backend.dto.OtpRequest;
 import com.Looksy.Backend.dto.OtpVerificationRequest;
@@ -18,8 +17,8 @@ import com.Looksy.Backend.util.OTP.OtpRateLimiter;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus; // Import for HttpStatus
-import org.springframework.http.ResponseEntity; // Import for ResponseEntity
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,13 +26,13 @@ import java.util.List;
 @RestController
 @RequestMapping("api/v1/user")
 public class UserController {
+
     @Autowired
     private final UserService userService;
     private final OtpCache otpCache;
     private final OtpRateLimiter otpRateLimiter;
     private final SmsService smsService;
     private final JwtUtil jwtUtil;
-
 
     public UserController(UserService userService, OtpCache otpCache, OtpRateLimiter otpRateLimiter, SmsService smsService, JwtUtil jwtUtil) {
         this.userService = userService;
@@ -50,25 +49,12 @@ public class UserController {
     private long jwtExpiration; // milliseconds
 
 
-//    @PostMapping("/register")
-//    public ResponseEntity<ApiResponse<userSchema>> createUser(@Valid @RequestBody String mobileNumber) {
-//        userSchema createdUser = userService.createUser(mobileNumber);
-//        ApiResponse<userSchema> response = new ApiResponse<>(
-//                true,
-//                "User created successfully!",
-//                createdUser
-//        );
-//        return new ResponseEntity<>(response, HttpStatus.CREATED);
-//    }
-
-
-    // --- New Endpoint: Request OTP for Registration ---
-    // --- New Endpoint: Request OTP for Registration ---
+    // --- Request OTP for Registration ---
     @PostMapping("/register/request-otp")
     public ResponseEntity<ApiResponse<Void>> requestRegistrationOtp(@Valid @RequestBody OtpRequest otpRequest) {
         String mobileNumber = otpRequest.getMobileNumber();
 
-        // 1. Check if user with this mobile number already exists and is verified
+        // 1. Check if user already registered and verified
         if (userService.checkUserAlreadyRegistered(mobileNumber)) {
             return new ResponseEntity<>(
                     new ApiResponse<>(false, "User with this mobile number already registered. Please login.", null),
@@ -76,7 +62,7 @@ public class UserController {
             );
         }
 
-        // 2. Apply rate limiting
+        // 2. Apply rate limiting to avoid spamming OTP requests
         if (!otpRateLimiter.tryAcquire(mobileNumber)) {
             return new ResponseEntity<>(
                     new ApiResponse<>(false, "Too many OTP requests. Please try again later.", null),
@@ -90,21 +76,15 @@ public class UserController {
         // 4. Store OTP in cache
         otpCache.putOtp(mobileNumber, otp);
 
-        // 5. CRITICAL: Store the initial unverified user data in the cache
-        // Assuming userSchema has a constructor or setters to set mobileNumber and an initial status
+        // 5. Store initial unverified user data in cache
         userSchema unverifiedUser = new userSchema();
         unverifiedUser.setMobileNumber(mobileNumber);
-        // You might also set other fields if they were part of the initial request,
-        // or set a status like UserStatus.UNVERIFIED
-        // unverifiedUser.setStatus(UserStatus.UNVERIFIED); // If you have a status field
-
-        otpCache.putUnverifiedUser(mobileNumber, unverifiedUser); // <--- ADD THIS LINE
+        otpCache.putUnverifiedUser(mobileNumber, unverifiedUser);
 
         // 6. Send OTP via SMS
         try {
             smsService.sendSms(mobileNumber, otp);
         } catch (SmsServiceException e) {
-            // Log the actual exception for debugging in production
             System.err.println("Failed to send SMS to " + mobileNumber + " due to: " + e.getMessage());
             return new ResponseEntity<>(
                     new ApiResponse<>(false, "Failed to send OTP. Please try again later.", null),
@@ -118,7 +98,7 @@ public class UserController {
         );
     }
 
-    // --- New Endpoint: Verify OTP and Complete Registration ---
+    // --- Verify OTP and Complete Registration ---
     @PostMapping("/register/verify-otp")
     public ResponseEntity<ApiResponse<userSchema>> verifyRegistrationOtp(@Valid @RequestBody OtpVerificationRequest verificationRequest) {
         String mobileNumber = verificationRequest.getMobileNumber();
@@ -126,7 +106,6 @@ public class UserController {
 
         // 1. Retrieve stored OTP
         String storedOtp = otpCache.getOtp(mobileNumber);
-
         if (storedOtp == null) {
             return new ResponseEntity<>(
                     new ApiResponse<>(false, "OTP either expired or not requested. Please request a new one.", null),
@@ -138,29 +117,25 @@ public class UserController {
         if (!storedOtp.equals(userProvidedOtp)) {
             return new ResponseEntity<>(
                     new ApiResponse<>(false, "Incorrect OTP. Please try again.", null),
-                    HttpStatus.UNAUTHORIZED // Or BAD_REQUEST
+                    HttpStatus.UNAUTHORIZED
             );
         }
 
         // 3. OTP is correct: Invalidate OTP from cache
         otpCache.invalidateOtp(mobileNumber);
 
-        // 4. Create the user (This is where the actual user creation happens)
-                // Inside verifyRegistrationOtp
-        // ...
-                userSchema unverifiedUser = otpCache.getUnverifiedUser(mobileNumber); // <--- THIS LINE IS THE CULPRIT
+        // 4. Retrieve unverified user details from cache
+        userSchema unverifiedUser = otpCache.getUnverifiedUser(mobileNumber);
+        if (unverifiedUser == null) {
+            return new ResponseEntity<>(
+                    new ApiResponse<>(false, "User details not found for verification. Please restart registration.", null),
+                    HttpStatus.BAD_REQUEST
+            );
+        }
 
-                if (unverifiedUser == null) {
-                    return new ResponseEntity<>(
-                            new ApiResponse<>(false, "User details not found for verification. Please restart registration.", null),
-                            HttpStatus.BAD_REQUEST
-                    );
-                }
-        // ...
-
-        // Create the user using the details from the cache
-        userSchema createdUser = userService.createUser(unverifiedUser); // Your existing createUser logic
-        otpCache.invalidateUnverifiedUser(mobileNumber); // Invalidate the unverified user details after successful creation
+        // 5. Create the user using the details from the cache
+        userSchema createdUser = userService.createUser(unverifiedUser);
+        otpCache.invalidateUnverifiedUser(mobileNumber);
 
         ApiResponse<userSchema> response = new ApiResponse<>(
                 true,
@@ -170,7 +145,7 @@ public class UserController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-
+    // --- Create User Directly Endpoint (Optional) ---
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<userSchema>> createUser(@Valid @RequestBody userSchema user) {
         userSchema createdUser = userService.createUser(user);
@@ -182,24 +157,29 @@ public class UserController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-
+    // --- Login User Endpoint: authenticate and generate JWT ---
     @PostMapping("/login")
     public ResponseEntity<AuthResponse<userSchema>> loginUser(@Valid @RequestBody userSchema user) {
         try {
+            // Authenticate user from UserService with username (mobileNumber) and password
             userSchema authenticatedUser = userService.authenticateUser(user.getMobileNumber(), user.getPassword());
+            // For security, clear password before returning user data
             authenticatedUser.setPassword(null);
 
-            // Generate JWT token
-            String token = jwtUtil.generateUserToken(authenticatedUser.getMobileNumber(), authenticatedUser.getId(), List.of("ROLE_USER"));
-            // Use AuthResponse instead of modifying ApiResponse
+            // Generate JWT token with user info and role "ROLE_USER"
+            String token = jwtUtil.generateToken(authenticatedUser.getMobileNumber()); // Using existing generateToken, should accept email or mobile identifier if desired
+
+            // Respond with AuthResponse containing success flag, message, user info, and token
             return ResponseEntity.ok(new AuthResponse<>(true, "Login successful!", authenticatedUser, token));
 
         } catch (Exception e) {
+            // Login failure, return unauthorized with false flag and null data/token
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new AuthResponse<>(false, "Login failed.", null, null));
+                    .body(new AuthResponse<>(false, "Login failed. Invalid credentials.", null, null));
         }
     }
 
+    // --- Update User Details ---
     @PutMapping("/update-details")
     public ResponseEntity<ApiResponse<userSchema>> updateUserDetail(@Valid @RequestBody userSchema userDetails) {
         try {
@@ -211,7 +191,6 @@ public class UserController {
             );
             return ResponseEntity.ok(response);
         } catch (ResourceNotFoundException e) {
-            // Let Spring's @ResponseStatus handle the 404
             throw e;
         } catch (Exception e) {
             ApiResponse<userSchema> errorResponse = new ApiResponse<>(false, "Server Error: Could not update user details.", null);
@@ -219,7 +198,7 @@ public class UserController {
         }
     }
 
-    // --- 3. Add Address to User ---
+    // --- Add Address to User ---
     @PostMapping("/{userId}/address")
     public ResponseEntity<ApiResponse<userSchema>> addAddressToUser(
             @PathVariable String userId,
@@ -231,37 +210,37 @@ public class UserController {
                     "Address added successfully.",
                     updatedUser
             );
-            return ResponseEntity.ok(response); // Returns 200 OK
+            return ResponseEntity.ok(response);
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            // Log the error
             ApiResponse<userSchema> errorResponse = new ApiResponse<>(false, "Server Error: Could not add address.", null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
-    // --- 4. Check User Addresses (Get All Addresses for a User)
-    @GetMapping("/address/{userId}") // Specific path for getting addresses
+    // --- Get All Addresses for a User ---
+    @GetMapping("/address/{userId}")
     public ResponseEntity<ApiResponse<List<Address>>> checkUserAddress(@PathVariable String userId) {
         try {
             List<Address> addresses = userService.checkUserAddress(userId);
             ApiResponse<List<Address>> response = new ApiResponse<>(
                     true,
                     "Addresses retrieved successfully.",
-                    addresses
+                    addresses // ✅ Correctly pass the list of addresses here
             );
-            return ResponseEntity.ok(response); // Returns 200 OK (even if list is empty)
+            return ResponseEntity.ok(response);
         } catch (ResourceNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            // Log the error
             ApiResponse<List<Address>> errorResponse = new ApiResponse<>(false, "Server Error: Could not retrieve addresses.", null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
-    // --- 5. Update User Address (Specific Address) ---
+
+
+    // --- Update Specific Address for a User ---
     @PutMapping("/{userId}/address/{addressId}")
     public ResponseEntity<ApiResponse<Address>> updateUserAddress(
             @PathVariable String userId,
@@ -274,14 +253,12 @@ public class UserController {
                     "Address updated successfully.",
                     updatedAddress
             );
-            return ResponseEntity.ok(response); // HTTP 200
+            return ResponseEntity.ok(response);
         } catch (ResourceNotFoundException e) {
-            throw e; // You can customize the exception handler globally
+            throw e;
         } catch (Exception e) {
             ApiResponse<Address> errorResponse = new ApiResponse<>(false, "Server Error: Could not update address.", null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-
-
 }

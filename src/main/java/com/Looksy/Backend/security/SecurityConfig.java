@@ -32,6 +32,7 @@ public class SecurityConfig {
                                 "/admin/register",
                                 "/admin/check_admin_login",
                                 "/admin/cleartoken",
+                                "/admin/isUserAuth",
 
                                 "/api/v1/user/register",
                                 "/api/v1/user/login",
@@ -66,6 +67,7 @@ public class SecurityConfig {
 
                                 // Subcategories
                                 "/subcategory/all",
+                                "/subcategory/add",
                                 "/subcategory/by-category/**", // Allow all subcategory IDs
                                 "/subcategory/by-priority/**",
                                 "/api/v1/user/register"

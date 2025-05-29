@@ -18,6 +18,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/subcategory")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class SubcategoryController {
 
     @Autowired

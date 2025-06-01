@@ -10,6 +10,7 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/banners")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RequiredArgsConstructor
 public class BannerController {
 

@@ -44,22 +44,37 @@ public class SecurityConfig {
                                 // Unprotected Color Endpoints
                                 "/api/colors/display_all_color",
                                 "/api/colors/product-by-id",
+                                "/api/colors/add_new_color",
+                                "/api/colors/delete_color_data",
+                                "/api/colors/edit_color_data",
+
 
                                 // Banners
                                 "/api/banners/all",
+                                "/api/banners/upload",
 
                                 // Categories
                                 "/category/display_all_category",
+                                "/category/add_new_category",
+                                "/category/edit_category_data",
+                                "/category/delete_category_data",
 
                                 // Dimensions
                                 "/api/dimensions/display_all_dimensions",
+                                "/api/dimensions/edit_dimension_data",
+                                "/api/dimensions/add_new_dimension",
                                 "/api/dimensions/fetch_all_dimensions",
+                                "/api/dimensions/delete_dimension_data/**",
 
                                 // Products
                                 "/api/products/display_all_product",
+                                 "/api/products/add_new_product",
+                                "/api/products/edit_product_data",
                                 "/api/products/fetch_all_product",
+                                "api/products/delete_product_data",
                                 "/api/products/by_salestatus",
                                 "/api/products/picture",
+                                "/api/products/update_icon",
                                 "/api/products/search",
                                 "/api/products/sorted-by-price",
                                 "/api/products/fetch_by_ids", // Ensure this is included
@@ -68,6 +83,8 @@ public class SecurityConfig {
                                 // Subcategories
                                 "/subcategory/all",
                                 "/subcategory/add",
+                                "subcategory/delete/**",
+                                "subcategory/edit_subcategory_data",
                                 "/subcategory/by-category/**", // Allow all subcategory IDs
                                 "/subcategory/by-priority/**",
                                 "/api/v1/user/register"

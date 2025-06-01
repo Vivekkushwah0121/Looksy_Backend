@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class ProductController {
 
     @Autowired
@@ -109,8 +109,10 @@ public class ProductController {
         }
     }
 
-    // ✅ Edit Product Data
-    @PutMapping("/edit_product_data")
+
+
+    // ✅ Edit Product Data - Changed from @PutMapping to @PostMapping
+    @PostMapping("/edit_product_data")
     public ResponseEntity<Map<String, Object>> editProductData(
             @RequestPart("data") String productJson,
             @RequestPart(value = "icon", required = false) MultipartFile iconFile,
@@ -160,8 +162,6 @@ public class ProductController {
         }
     }
 
-
-
     // ✅ Delete Product
     @PostMapping("/delete_product_data")
     public ResponseEntity<Map<String, Object>> deleteProductData(@RequestBody Map<String, String> request) {
@@ -186,6 +186,7 @@ public class ProductController {
             ));
         }
     }
+
 
     // ✅ Add Additional Product Images
     @PostMapping("/add_product_images")

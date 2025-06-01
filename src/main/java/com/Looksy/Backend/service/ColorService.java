@@ -24,6 +24,7 @@ public class ColorService {
         color.setSizeid(colorDTO.getSizeid());
         color.setSize(colorDTO.getSize());
         color.setColor(colorDTO.getColor());
+        color.setColorCode(colorDTO.getColorCode()); // ✅ Fix here
         return colorRepository.save(color);
     }
 
@@ -39,6 +40,7 @@ public class ColorService {
             color.setProductid(colorDTO.getProductid());
             color.setSize(colorDTO.getSize());
             color.setColor(colorDTO.getColor());
+            color.setColorCode(colorDTO.getColorCode());
             return colorRepository.save(color);
         }
         return null;

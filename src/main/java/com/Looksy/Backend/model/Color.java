@@ -1,5 +1,6 @@
 package com.Looksy.Backend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.bson.types.ObjectId;
@@ -14,6 +15,18 @@ public class Color {
     private ObjectId sizeid;
     private String size;
     private String color;
+    @JsonProperty("colorCode")
+    private String ColorCode;
+
+
+    public String getColorCode() {
+        return ColorCode;
+    }
+
+    public void setColorCode(String colorCode) {
+        ColorCode = colorCode;
+    }
+
 
     // Getters and Setters
     public ObjectId getColorid() {

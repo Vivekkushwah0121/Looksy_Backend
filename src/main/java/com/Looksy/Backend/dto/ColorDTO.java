@@ -1,5 +1,6 @@
 package com.Looksy.Backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.bson.types.ObjectId;
 
 public class ColorDTO {
@@ -10,6 +11,18 @@ public class ColorDTO {
     private ObjectId sizeid;
     private String size;
     private String color;
+    @JsonProperty("colorCode")
+    private String ColorCode;
+
+    public String getColorCode() {
+        return ColorCode;
+    }
+
+    public void setColorCode(String colorCode) {
+        ColorCode = colorCode;
+    }
+
+
 
     // Getters and Setters
     public ObjectId getColorid() {

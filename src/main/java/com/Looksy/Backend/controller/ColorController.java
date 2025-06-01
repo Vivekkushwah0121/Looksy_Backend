@@ -8,11 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/colors")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class ColorController {
 
     @Autowired
@@ -51,12 +53,18 @@ public class ColorController {
     }
 
     @PostMapping("/delete_color_data")
-    public ResponseEntity<String> deleteColorData(@RequestBody ColorDTO colorDTO) {
+    public ResponseEntity<Map<String, Object>> deleteColorData(@RequestBody ColorDTO colorDTO) {
         try {
             colorService.deleteColor(colorDTO.getColorid());
-            return ResponseEntity.ok("Color deleted successfully.");
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", true);
+            response.put("message", "Color deleted successfully");
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
     }
 

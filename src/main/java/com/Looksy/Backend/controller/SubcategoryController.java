@@ -62,7 +62,7 @@ public class SubcategoryController {
         }
     }
 
-    @PutMapping("/edit_subcategory_data")
+    @PostMapping("/edit_subcategory_data")
     public ResponseEntity<?> editSubcategoryWithIcon(
             @RequestPart("subcategoryData") String subcategoryData,
             @RequestPart(value = "icon", required = false) MultipartFile iconFile
@@ -107,13 +107,14 @@ public class SubcategoryController {
                 .orElseGet(() -> ResponseEntity.badRequest().body(Map.of("status", false, "message", "Subcategory not found")));
     }
 
-    @DeleteMapping("/delete/{subcategoryid}")
+    @PostMapping("/delete/{subcategoryid}")
     public ResponseEntity<?> deleteSubcategory(@PathVariable String subcategoryid) {
         boolean deleted = subcategoryService.deleteSubcategory(subcategoryid);
         return deleted
                 ? ResponseEntity.ok(Map.of("status", true, "message", "Subcategory deleted successfully"))
                 : ResponseEntity.badRequest().body(Map.of("status", false, "message", "Subcategory not found"));
     }
+
 
     @GetMapping("/by-category/{categoryid}")
     public ResponseEntity<List<SubcategoryResponse>> getByCategoryid(@PathVariable String categoryid) {
